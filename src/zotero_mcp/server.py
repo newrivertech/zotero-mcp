@@ -26,6 +26,19 @@ from zotero_mcp.client import (
 )
 from zotero_mcp.utils import format_creators, clean_html
 
+
+def _safe_int(value: int | str | None, default: int | None = None) -> int | None:
+    """Safely convert a value to int, returning default if conversion fails."""
+    if value is None:
+        return default
+    if isinstance(value, int):
+        return value
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
 @asynccontextmanager
 async def server_lifespan(server: FastMCP):
     """Manage server startup and shutdown lifecycle."""
@@ -106,8 +119,7 @@ def search_items(
         ctx.info(f"Searching Zotero for '{query}'{tag_condition_str}")
         zot = get_zotero_client()
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 10)
 
         # Search using the query parameters
         zot.add_parameters(q=query, qmode=qmode, itemType=item_type, limit=limit, tag=tag)
@@ -197,8 +209,7 @@ def search_by_tag(
         ctx.info(f"Searching Zotero for tag '{tag}'")
         zot = get_zotero_client()
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 10)
 
         # Search using the query parameters
         zot.add_parameters(q="", tag=tag, itemType=item_type, limit=limit)
@@ -386,8 +397,7 @@ def get_collections(
         ctx.info("Fetching collections")
         zot = get_zotero_client()
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit)
 
         collections = zot.collections(limit=limit)
 
@@ -488,8 +498,7 @@ def get_collection_items(
         except Exception:
             collection_name = f"Collection {collection_key}"
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 50)
 
         # Then get the items
         items = zot.collection_items(collection_key, limit=limit)
@@ -663,8 +672,7 @@ def get_tags(
         ctx.info("Fetching tags")
         zot = get_zotero_client()
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit)
 
         tags = zot.tags(limit=limit)
         if not tags:
@@ -717,8 +725,7 @@ def get_recent(
         ctx.info(f"Fetching {limit} recent items")
         zot = get_zotero_client()
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 10)
 
         # Ensure limit is a reasonable number
         if limit <= 0:
@@ -820,8 +827,7 @@ def batch_update_tags(
         ctx.info(f"Batch updating tags for items matching '{query}'")
         zot = get_zotero_client()
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 50)
 
         # Search for items matching the query
         zot.add_parameters(q=query, limit=limit)
@@ -955,8 +961,7 @@ def advanced_search(
             params["sort"] = sort_by
             params["direction"] = sort_direction
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 50)
 
         # Add limit parameter
         params["limit"] = limit
@@ -1294,8 +1299,7 @@ def get_annotations(
 
         else:
             # Retrieve all annotations in the library
-            if isinstance(limit, str):
-                limit = int(limit)
+            limit = _safe_int(limit)
             zot.add_parameters(itemType="annotation", limit=limit or 50)
             annotations = zot.everything(zot.items())
 
@@ -1410,8 +1414,7 @@ def get_notes(
         # Prepare search parameters
         params = {"itemType": "note"}
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 20)
 
         # Get notes
         notes = []
@@ -1500,8 +1503,7 @@ def search_notes(
 
         # Search for notes and annotations
 
-        if isinstance(limit, str):
-            limit = int(limit)
+        limit = _safe_int(limit, 20)
 
         # First search notes
         zot.add_parameters(q=query, itemType="note", limit=limit or 20)
